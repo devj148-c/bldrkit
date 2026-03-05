@@ -1,0 +1,98 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model User {
+  id             String          @id @default(cuid())
+  email          String          @unique
+  password       String
+  businessName   String?
+  phone          String?
+  createdAt      DateTime        @default(now())
+  leads          Lead[]
+  website        Website?
+  quotes         Quote[]
+  visualizations Visualization[]
+}
+
+model Lead {
+  id             String   @id @default(cuid())
+  name           String
+  email          String?
+  phone          String?
+  address        String?
+  status         String   @default("new")
+  jobType        String?
+  source         String?
+  estimatedValue Float?
+  roofArea       Float?
+  materialPref   String?
+  notes          Note[]
+  quote          Quote?
+  userId         String
+  user           User     @relation(fields: [userId], references: [id])
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model Note {
+  id        String   @id @default(cuid())
+  content   String
+  leadId    String
+  lead      Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+}
+
+model Quote {
+  id           String   @id @default(cuid())
+  address      String
+  roofAreaSqFt Float?
+  materialType String?
+  priceMin     Float?
+  priceMax     Float?
+  leadName     String?
+  leadEmail    String?
+  leadPhone    String?
+  leadId       String?  @unique
+  lead         Lead?    @relation(fields: [leadId], references: [id])
+  userId       String
+  user         User     @relation(fields: [userId], references: [id])
+  createdAt    DateTime @default(now())
+}
+
+model Website {
+  id           String   @id @default(cuid())
+  template     String   @default("modern")
+  businessName String?
+  phone        String?
+  email        String?
+  logo         String?
+  aboutText    String?
+  services     String?
+  serviceAreas String?
+  testimonials String?
+  photos       String?
+  colorScheme  String?
+  published    Boolean  @default(false)
+  userId       String   @unique
+  user         User     @relation(fields: [userId], references: [id])
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Visualization {
+  id             String   @id @default(cuid())
+  originalImage  String
+  generatedImage String?
+  material       String
+  style          String?
+  status         String   @default("pending")
+  userId         String
+  user           User     @relation(fields: [userId], references: [id])
+  createdAt      DateTime @default(now())
+}

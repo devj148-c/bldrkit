@@ -1,0 +1,10 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1024" height="1024" fill="#1a1a2e"/>
+  <rect x="262" y="400" width="500" height="350" fill="#374151" rx="8"/>
+  <polygon points="512,250 262,450 762,450" fill="#10b981"/>
+  <rect x="412" y="550" width="120" height="200" fill="#1f2937" rx="4"/>
+  <rect x="300" y="500" width="80" height="80" fill="#1f2937" rx="2"/>
+  <rect x="580" y="500" width="80" height="80" fill="#1f2937" rx="2"/>
+  <text x="512" y="850" text-anchor="middle" fill="#9ca3af" font-family="system-ui" font-size="18">AI Visualization Preview</text>
+  <text x="512" y="880" text-anchor="middle" fill="#6b7280" font-family="system-ui" font-size="14">Connect OpenAI API key to generate real visualizations</text>
+</svg>
