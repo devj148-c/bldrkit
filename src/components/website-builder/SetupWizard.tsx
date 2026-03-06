@@ -194,13 +194,17 @@ export function SetupWizard() {
       setGenerationStep(i + 1)
     }
     setGenerationComplete(true)
-    // In reality, call the API
+    // Call the API and store result
     try {
-      await fetch("/api/website-builder/generate", {
+      const res = await fetch("/api/website-builder/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       })
+      if (res.ok) {
+        const websiteData = await res.json()
+        localStorage.setItem("bldrkit-website", JSON.stringify(websiteData))
+      }
     } catch {
       // Silently handle — the mock will still show success
     }
