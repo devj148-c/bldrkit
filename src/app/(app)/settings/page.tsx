@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
 import { Building2, CreditCard, Puzzle, Plug } from "lucide-react"
+import { DEFAULT_PRICING } from "@/lib/quote"
+import { PricingConfigForm } from "@/components/settings/PricingConfigForm"
 
 export default async function SettingsPage() {
   const session = await getSessionWithOrg()
@@ -18,6 +20,10 @@ export default async function SettingsPage() {
   })
 
   if (!org) redirect("/login")
+
+  const pricingConfig = await prisma.pricingConfig.findUnique({
+    where: { organizationId: session.orgId },
+  })
 
   return (
     <>
@@ -121,6 +127,20 @@ export default async function SettingsPage() {
             </p>
           </CardContent>
         </Card>
+
+        <PricingConfigForm
+          initialValues={{
+            threeTabPerSqft: pricingConfig?.threeTabPerSqft ?? DEFAULT_PRICING.threeTabPerSqft,
+            architecturalPerSqft: pricingConfig?.architecturalPerSqft ?? DEFAULT_PRICING.architecturalPerSqft,
+            metalPerSqft: pricingConfig?.metalPerSqft ?? DEFAULT_PRICING.metalPerSqft,
+            tilePerSqft: pricingConfig?.tilePerSqft ?? DEFAULT_PRICING.tilePerSqft,
+            minimumJobPrice: pricingConfig?.minimumJobPrice ?? DEFAULT_PRICING.minimumJobPrice,
+            repairMarkup: pricingConfig?.repairMarkup ?? DEFAULT_PRICING.repairMarkup,
+            complexitySimple: pricingConfig?.complexitySimple ?? DEFAULT_PRICING.complexitySimple,
+            complexityMedium: pricingConfig?.complexityMedium ?? DEFAULT_PRICING.complexityMedium,
+            complexityComplex: pricingConfig?.complexityComplex ?? DEFAULT_PRICING.complexityComplex,
+          }}
+        />
       </div>
     </>
   )

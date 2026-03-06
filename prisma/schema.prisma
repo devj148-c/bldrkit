@@ -36,6 +36,8 @@ model Organization {
   estimates     Estimate[]
   website       Website?
   appointments  Appointment[]
+  leads         Lead[]
+  pricingConfig PricingConfig?
 
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
@@ -463,4 +465,75 @@ enum AppointmentStatus {
   RESCHEDULED
   COMPLETED
   NO_SHOW
+}
+
+model Lead {
+  id              String       @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  // Contact
+  name            String
+  phone           String
+  email           String
+
+  // Property
+  address         String
+  lat             Float?
+  lng             Float?
+  roofSqft        Float?
+  roofPitch       Float?
+  roofPitchRatio  String?
+  roofSegments    Int?
+  roofComplexity  String?
+  imageryDate     String?
+
+  // Quote
+  workType        String
+  material        String?
+  lowEstimate     Float?
+  highEstimate    Float?
+
+  // Photos
+  photos          LeadPhoto[]
+
+  // Appointment
+  appointmentDate DateTime?
+  appointmentSlot String?
+
+  // Status
+  status          String       @default("new")
+  notes           String?
+
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+}
+
+model LeadPhoto {
+  id        String   @id @default(cuid())
+  leadId     String
+  lead       Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  url        String
+  filename   String
+  createdAt  DateTime @default(now())
+}
+
+model PricingConfig {
+  id                    String       @id @default(cuid())
+  organizationId        String       @unique
+  organization          Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  threeTabPerSqft       Float        @default(3.50)
+  architecturalPerSqft  Float        @default(4.50)
+  metalPerSqft          Float        @default(7.00)
+  tilePerSqft           Float        @default(10.00)
+
+  minimumJobPrice       Float        @default(5000)
+  repairMarkup          Float        @default(0.20)
+
+  complexitySimple      Float        @default(1.0)
+  complexityMedium      Float        @default(1.15)
+  complexityComplex     Float        @default(1.30)
+
+  updatedAt             DateTime     @updatedAt
 }

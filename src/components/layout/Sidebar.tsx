@@ -18,6 +18,7 @@ import {
   CalendarCheck,
   Calculator,
   Brain,
+  Target,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useState } from "react"
@@ -33,6 +34,7 @@ const navItems = [
   { href: "/schedule", label: "Schedule", icon: Calendar },
   { href: "/website-builder", label: "Website Builder", icon: Globe },
   { href: "/appointments", label: "Appointments", icon: CalendarCheck },
+  { href: "/dashboard/leads", label: "Leads", icon: Target },
   { href: "/team", label: "Team", icon: UserCog },
   { href: "/settings", label: "Settings", icon: Settings },
 ]

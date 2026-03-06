@@ -1,8 +1,6 @@
 "use client"
 
 import { useState } from "react"
-import { signIn } from "next-auth/react"
-import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -10,7 +8,6 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 
 export default function LoginPage() {
-  const router = useRouter()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
@@ -21,17 +18,36 @@ export default function LoginPage() {
     setLoading(true)
     setError("")
 
-    const result = await signIn("credentials", {
-      email,
-      password,
-      redirect: false,
-    })
+    try {
+      // Get CSRF token first
+      const csrfRes = await fetch("/api/auth/csrf")
+      const { csrfToken } = await csrfRes.json()
 
-    if (result?.error) {
-      setError("Invalid email or password")
+      // Call the credentials callback directly
+      const res = await fetch("/api/auth/callback/credentials", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({
+          email,
+          password,
+          csrfToken,
+          json: "true",
+        }),
+        redirect: "follow",
+      })
+
+      // If the final URL contains an error, show it
+      if (res.url?.includes("error=")) {
+        setError("Invalid email or password")
+        setLoading(false)
+        return
+      }
+
+      // Success — navigate to dashboard
+      window.location.href = "/dashboard"
+    } catch {
+      setError("Something went wrong. Please try again.")
       setLoading(false)
-    } else {
-      router.push("/dashboard")
     }
   }
 

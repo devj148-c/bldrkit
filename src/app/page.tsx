@@ -41,6 +41,11 @@ export default function LandingPage() {
           Join the 80% of roofing contractors who are finally getting the tools they deserve.
         </p>
         <div className="flex flex-col sm:flex-row justify-center gap-4 mb-12">
+          <Link href="/quote">
+            <Button variant="outline" size="lg" className="text-lg px-8 w-full sm:w-auto">
+              Get Instant Estimate
+            </Button>
+          </Link>
           <Link href="/register">
             <Button size="lg" className="text-lg px-8 w-full sm:w-auto">
               Start Free — No Credit Card <ArrowRight className="ml-2 h-5 w-5" />

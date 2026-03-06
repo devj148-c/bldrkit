@@ -1,12 +1,11 @@
 import NextAuth from 'next-auth'
 import Credentials from 'next-auth/providers/credentials'
-import { PrismaAdapter } from '@auth/prisma-adapter'
 import { prisma } from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
 import type { MemberRole } from '@prisma/client'
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
-  adapter: PrismaAdapter(prisma),
+  // No PrismaAdapter — we use JWT sessions with manual credential checks
   session: { strategy: 'jwt' },
   pages: {
     signIn: '/login',
