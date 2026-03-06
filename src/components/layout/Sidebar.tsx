@@ -17,6 +17,7 @@ import {
   Globe,
   CalendarCheck,
   Calculator,
+  Brain,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useState } from "react"
@@ -26,6 +27,7 @@ const navItems = [
   { href: "/customers", label: "Customers", icon: Users },
   { href: "/jobs", label: "Jobs", icon: Briefcase },
   { href: "/quick-estimate", label: "Quick Estimate", icon: Calculator },
+  { href: "/insights", label: "AI Insights", icon: Brain },
   { href: "/estimates", label: "Estimates", icon: FileText },
   { href: "/invoices", label: "Invoices", icon: Receipt },
   { href: "/schedule", label: "Schedule", icon: Calendar },
