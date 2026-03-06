@@ -76,9 +76,11 @@ export function RoofAnalysis({
               </Button>
             ))}
           </div>
-          <Button className="w-full" disabled={!manualSqft} onClick={onContinue}>
-            Continue
+          <div className="flex justify-end">
+          <Button disabled={!manualSqft} onClick={onContinue}>
+            Continue →
           </Button>
+        </div>
         </CardContent>
       </Card>
     )
@@ -111,7 +113,9 @@ export function RoofAnalysis({
           <Badge variant="outline">{roofData.segments} sections</Badge>
           <Badge variant="outline">Imagery: {roofData.imageryDate}</Badge>
         </div>
-        <Button className="w-full" onClick={onContinue}>Continue</Button>
+        <div className="flex justify-end">
+          <Button onClick={onContinue}>Continue →</Button>
+        </div>
       </CardContent>
     </Card>
   )

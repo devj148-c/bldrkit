@@ -39,7 +39,9 @@ export function MaterialStep({ value, onChange, onContinue }: MaterialStepProps)
             <p className="text-sm text-muted-foreground">{material.detail}</p>
           </button>
         ))}
-        <Button className="w-full" disabled={!value} onClick={onContinue}>Continue</Button>
+        <div className="flex justify-end">
+          <Button disabled={!value} onClick={onContinue}>Continue →</Button>
+        </div>
       </CardContent>
     </Card>
   )

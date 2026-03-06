@@ -36,9 +36,11 @@ export function EstimateStep({ loading, lowEstimate, highEstimate, companyName, 
             </p>
           </>
         )}
-        <Button className="w-full" onClick={onContinue} disabled={loading || lowEstimate === null || highEstimate === null}>
-          Continue to Booking
-        </Button>
+        <div className="flex justify-end">
+          <Button onClick={onContinue} disabled={loading || lowEstimate === null || highEstimate === null}>
+            Book a Free Inspection →
+          </Button>
+        </div>
       </CardContent>
     </Card>
   )

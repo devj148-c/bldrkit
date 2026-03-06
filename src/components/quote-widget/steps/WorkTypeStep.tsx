@@ -39,7 +39,9 @@ export function WorkTypeStep({ value, onChange, onContinue }: WorkTypeStepProps)
             <p className="text-sm text-muted-foreground">{option.description}</p>
           </button>
         ))}
-        <Button className="w-full" disabled={!value} onClick={onContinue}>Continue</Button>
+        <div className="flex justify-end">
+          <Button disabled={!value} onClick={onContinue}>Continue →</Button>
+        </div>
       </CardContent>
     </Card>
   )

@@ -74,9 +74,11 @@ export function ContactBookingStep({
           <p>We&apos;ll confirm your appointment within 1 hour</p>
         </div>
 
-        <Button className="w-full" onClick={onSubmit} disabled={!canSubmit || submitting}>
-          {submitting ? "Submitting..." : "Book My Free Inspection"}
-        </Button>
+        <div className="flex justify-end">
+          <Button onClick={onSubmit} disabled={!canSubmit || submitting}>
+            {submitting ? "Submitting..." : "Book My Free Inspection →"}
+          </Button>
+        </div>
       </CardContent>
     </Card>
   )

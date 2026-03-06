@@ -74,8 +74,10 @@ export function PhotoUploadStep({ photos, onAddPhoto, onRemovePhoto, onContinue 
         )}
 
         <div className="flex gap-2">
-          <Button className="flex-1" onClick={onContinue}>Continue</Button>
           <Button type="button" variant="outline" className="flex-1" onClick={onContinue}>Skip</Button>
+          <Button className="flex-1" onClick={onContinue}>
+            {photos.length > 0 ? "Continue →" : "Continue →"}
+          </Button>
         </div>
       </CardContent>
     </Card>
