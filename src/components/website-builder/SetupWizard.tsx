@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -131,12 +131,15 @@ interface OnboardingData {
   additionalCities: string
   serviceRadius: string
   templateId: string
+  logoDataUrl: string
+  logoFilename: string
 }
 
 export function SetupWizard() {
   const [step, setStep] = useState(1)
   const [generationStep, setGenerationStep] = useState(0)
   const [generationComplete, setGenerationComplete] = useState(false)
+  const logoInputRef = useRef<HTMLInputElement>(null)
   const [data, setData] = useState<OnboardingData>({
     companyName: "",
     phone: "",
@@ -154,6 +157,8 @@ export function SetupWizard() {
     additionalCities: "",
     serviceRadius: "25",
     templateId: "",
+    logoDataUrl: "",
+    logoFilename: "",
   })
 
   const updateData = (field: keyof OnboardingData, value: string | string[]) => {
@@ -366,13 +371,92 @@ export function SetupWizard() {
               <Label className="flex items-center gap-1">
                 <Upload className="h-3 w-3" /> Company Logo
               </Label>
-              <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 text-center hover:border-primary/50 transition-colors cursor-pointer">
-                <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-                <p className="text-sm text-muted-foreground">
-                  Drag and drop your logo here, or click to browse
-                </p>
-                <p className="text-xs text-muted-foreground mt-1">PNG, JPG up to 5MB</p>
-              </div>
+              <input
+                ref={logoInputRef}
+                type="file"
+                accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0]
+                  if (!file) return
+                  if (file.size > 5 * 1024 * 1024) {
+                    alert("Logo must be under 5MB")
+                    return
+                  }
+                  const reader = new FileReader()
+                  reader.onload = () => {
+                    updateData("logoDataUrl", reader.result as string)
+                    updateData("logoFilename", file.name)
+                  }
+                  reader.readAsDataURL(file)
+                }}
+              />
+              {data.logoDataUrl ? (
+                <div className="border-2 border-primary/50 rounded-lg p-4 text-center">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={data.logoDataUrl}
+                    alt="Company logo"
+                    className="max-h-24 mx-auto mb-2 object-contain"
+                  />
+                  <p className="text-sm text-muted-foreground">{data.logoFilename}</p>
+                  <div className="flex gap-2 justify-center mt-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => logoInputRef.current?.click()}
+                    >
+                      Replace
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        updateData("logoDataUrl", "")
+                        updateData("logoFilename", "")
+                      }}
+                    >
+                      Remove
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div
+                  className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 text-center hover:border-primary/50 transition-colors cursor-pointer"
+                  onClick={() => logoInputRef.current?.click()}
+                  onDragOver={(e) => {
+                    e.preventDefault()
+                    e.currentTarget.classList.add("border-primary/50")
+                  }}
+                  onDragLeave={(e) => {
+                    e.currentTarget.classList.remove("border-primary/50")
+                  }}
+                  onDrop={(e) => {
+                    e.preventDefault()
+                    e.currentTarget.classList.remove("border-primary/50")
+                    const file = e.dataTransfer.files?.[0]
+                    if (!file || !file.type.startsWith("image/")) return
+                    if (file.size > 5 * 1024 * 1024) {
+                      alert("Logo must be under 5MB")
+                      return
+                    }
+                    const reader = new FileReader()
+                    reader.onload = () => {
+                      updateData("logoDataUrl", reader.result as string)
+                      updateData("logoFilename", file.name)
+                    }
+                    reader.readAsDataURL(file)
+                  }}
+                >
+                  <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                  <p className="text-sm text-muted-foreground">
+                    Drag and drop your logo here, or click to browse
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">PNG, JPG, SVG up to 5MB</p>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
