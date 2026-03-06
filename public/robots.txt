@@ -1,0 +1,13 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /dashboard
+Disallow: /customers
+Disallow: /jobs
+Disallow: /estimates
+Disallow: /invoices
+Disallow: /schedule
+Disallow: /team
+Disallow: /settings
+
+Sitemap: https://bldrkit.com/sitemap.xml
