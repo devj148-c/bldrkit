@@ -1,158 +1,255 @@
-"use client";
-
-import { useEffect, useState } from "react";
-import { Header } from "@/components/layout/Header";
-import { StatsCards } from "@/components/dashboard/StatsCards";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import Link from "next/link";
+import { getSessionWithOrg } from "@/lib/auth"
+import { prisma } from "@/lib/prisma"
+import { redirect } from "next/navigation"
+import { Header } from "@/components/layout/Header"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { formatCurrency, formatDate } from "@/lib/utils"
 import {
-  Calculator,
-  Globe,
-  Paintbrush,
+  DollarSign,
+  Briefcase,
   Users,
-  Clock,
-} from "lucide-react";
+  FileText,
+  Receipt,
+  TrendingUp,
+  Plus,
+} from "lucide-react"
+import Link from "next/link"
+import { Button } from "@/components/ui/button"
 
-interface DashboardStats {
-  totalLeads: number;
-  leadsThisMonth: number;
-  conversionRate: number;
-  pipelineValue: number;
-  recentLeads: {
-    id: string;
-    name: string;
-    status: string;
-    jobType: string | null;
-    estimatedValue: number | null;
-    createdAt: string;
-    source: string | null;
-  }[];
-}
+export default async function DashboardPage() {
+  const session = await getSessionWithOrg()
+  if (!session?.orgId) redirect("/login")
 
-const statusColors: Record<string, string> = {
-  new: "bg-blue-100 text-blue-800",
-  contacted: "bg-yellow-100 text-yellow-800",
-  quoted: "bg-purple-100 text-purple-800",
-  negotiating: "bg-orange-100 text-orange-800",
-  won: "bg-emerald-100 text-emerald-800",
-  lost: "bg-red-100 text-red-800",
-};
+  const orgId = session.orgId
 
-const quickActions = [
-  { href: "/quotes", label: "New Quote", icon: Calculator, color: "bg-blue-500" },
-  { href: "/leads", label: "View Leads", icon: Users, color: "bg-emerald-500" },
-  { href: "/website-builder", label: "Edit Website", icon: Globe, color: "bg-purple-500" },
-  { href: "/visualizer", label: "AI Visualizer", icon: Paintbrush, color: "bg-amber-500" },
-];
+  // Parallel data fetching
+  const [
+    customerCount,
+    jobCounts,
+    recentJobs,
+    overdueInvoices,
+    estimateCount,
+    invoiceTotal,
+  ] = await Promise.all([
+    prisma.customer.count({ where: { organizationId: orgId } }),
+    prisma.job.groupBy({
+      by: ["status"],
+      where: { organizationId: orgId },
+      _count: true,
+    }),
+    prisma.job.findMany({
+      where: { organizationId: orgId },
+      include: { customer: true },
+      orderBy: { updatedAt: "desc" },
+      take: 5,
+    }),
+    prisma.invoice.findMany({
+      where: {
+        organizationId: orgId,
+        status: { in: ["SENT", "OVERDUE"] },
+        dueDate: { lt: new Date() },
+      },
+      include: { customer: true },
+      take: 5,
+    }),
+    prisma.estimate.count({
+      where: { organizationId: orgId, status: "SENT" },
+    }),
+    prisma.invoice.aggregate({
+      where: { organizationId: orgId, status: "PAID" },
+      _sum: { total: true },
+    }),
+  ])
 
-export default function DashboardPage() {
-  const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [loading, setLoading] = useState(true);
+  const totalJobs = jobCounts.reduce((acc, c) => acc + c._count, 0)
+  const activeJobs = jobCounts.filter((c) => ["IN_PROGRESS", "SCHEDULED"].includes(c.status)).reduce((acc, c) => acc + c._count, 0)
+  const totalRevenue = invoiceTotal._sum.total ? Number(invoiceTotal._sum.total) : 0
 
-  useEffect(() => {
-    fetch("/api/dashboard/stats")
-      .then((res) => res.json())
-      .then((data) => {
-        setStats(data);
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
-  }, []);
+  const statusColors: Record<string, string> = {
+    LEAD: "bg-gray-500",
+    QUOTED: "bg-blue-500",
+    SCHEDULED: "bg-yellow-500",
+    IN_PROGRESS: "bg-orange-500",
+    COMPLETED: "bg-green-500",
+    ON_HOLD: "bg-red-500",
+    CANCELLED: "bg-gray-400",
+  }
 
   return (
-    <div className="flex flex-col">
-      <Header title="Dashboard" />
-      <div className="flex-1 space-y-6 p-6">
-        {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="h-8 w-8 animate-spin rounded-full border-4 border-emerald-500 border-t-transparent" />
+    <>
+      <Header
+        title="Dashboard"
+        subtitle={`Welcome back, ${session.user.name || "there"}!`}
+        actions={
+          <div className="flex gap-2">
+            <Link href="/customers">
+              <Button size="sm" variant="outline">
+                <Plus className="h-4 w-4 mr-1" /> Customer
+              </Button>
+            </Link>
+            <Link href="/jobs">
+              <Button size="sm">
+                <Plus className="h-4 w-4 mr-1" /> Job
+              </Button>
+            </Link>
           </div>
-        ) : stats ? (
-          <>
-            <StatsCards
-              totalLeads={stats.totalLeads}
-              leadsThisMonth={stats.leadsThisMonth}
-              conversionRate={stats.conversionRate}
-              pipelineValue={stats.pipelineValue}
-            />
+        }
+      />
 
-            <div className="grid gap-6 lg:grid-cols-2">
-              {/* Quick Actions */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Quick Actions</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 gap-3">
-                    {quickActions.map((action) => (
-                      <Link key={action.href} href={action.href}>
-                        <Button
-                          variant="outline"
-                          className="h-auto w-full flex-col gap-2 py-4"
-                        >
-                          <div className={`rounded-lg p-2 ${action.color} text-white`}>
-                            <action.icon size={20} />
-                          </div>
-                          <span className="text-sm font-medium">{action.label}</span>
-                        </Button>
-                      </Link>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
+      <div className="p-6 space-y-6">
+        {/* Stats Grid */}
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
+              <DollarSign className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{formatCurrency(totalRevenue)}</div>
+              <p className="text-xs text-muted-foreground">From paid invoices</p>
+            </CardContent>
+          </Card>
 
-              {/* Recent Activity */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-lg">
-                    <Clock size={18} />
-                    Recent Activity
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {stats.recentLeads.length === 0 ? (
-                      <p className="text-sm text-gray-500">No recent activity</p>
-                    ) : (
-                      stats.recentLeads.map((lead) => (
-                        <div
-                          key={lead.id}
-                          className="flex items-center justify-between rounded-lg border p-3"
-                        >
-                          <div>
-                            <p className="font-medium text-sm">{lead.name}</p>
-                            <p className="text-xs text-gray-500">
-                              {lead.jobType ? lead.jobType.replace("_", " ") : "—"} · via{" "}
-                              {lead.source?.replace("_", " ") || "unknown"}
-                            </p>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            {lead.estimatedValue && (
-                              <span className="text-sm font-medium text-gray-700">
-                                ${lead.estimatedValue.toLocaleString()}
-                              </span>
-                            )}
-                            <Badge
-                              variant="secondary"
-                              className={statusColors[lead.status] || ""}
-                            >
-                              {lead.status}
-                            </Badge>
-                          </div>
-                        </div>
-                      ))
-                    )}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">Active Jobs</CardTitle>
+              <Briefcase className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{activeJobs}</div>
+              <p className="text-xs text-muted-foreground">{totalJobs} total jobs</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">Customers</CardTitle>
+              <Users className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{customerCount}</div>
+              <p className="text-xs text-muted-foreground">In your CRM</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">Pending Estimates</CardTitle>
+              <FileText className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{estimateCount}</div>
+              <p className="text-xs text-muted-foreground">Awaiting response</p>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="grid gap-6 md:grid-cols-2">
+          {/* Recent Jobs */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <TrendingUp className="h-4 w-4" />
+                Recent Jobs
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {recentJobs.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No jobs yet. Create your first job!</p>
+              ) : (
+                <div className="space-y-3">
+                  {recentJobs.map((job) => (
+                    <Link
+                      key={job.id}
+                      href={`/jobs/${job.id}`}
+                      className="flex items-center justify-between rounded-md p-2 hover:bg-accent transition-colors"
+                    >
+                      <div>
+                        <p className="text-sm font-medium">{job.title}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {job.customer.firstName} {job.customer.lastName}
+                        </p>
+                      </div>
+                      <Badge variant="secondary" className="text-xs">
+                        <span className={`w-2 h-2 rounded-full mr-1.5 ${statusColors[job.status]}`} />
+                        {job.status.replace("_", " ")}
+                      </Badge>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Overdue Invoices */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Receipt className="h-4 w-4" />
+                Outstanding Invoices
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {overdueInvoices.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No outstanding invoices. Nice!</p>
+              ) : (
+                <div className="space-y-3">
+                  {overdueInvoices.map((inv) => (
+                    <Link
+                      key={inv.id}
+                      href={`/invoices/${inv.id}`}
+                      className="flex items-center justify-between rounded-md p-2 hover:bg-accent transition-colors"
+                    >
+                      <div>
+                        <p className="text-sm font-medium">#{inv.invoiceNumber}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {inv.customer.firstName} {inv.customer.lastName}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm font-medium text-destructive">
+                          {formatCurrency(Number(inv.total))}
+                        </p>
+                        {inv.dueDate && (
+                          <p className="text-xs text-muted-foreground">
+                            Due {formatDate(inv.dueDate)}
+                          </p>
+                        )}
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Pipeline Overview */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Job Pipeline</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex gap-4 overflow-x-auto pb-2">
+              {["LEAD", "QUOTED", "SCHEDULED", "IN_PROGRESS", "COMPLETED"].map((status) => {
+                const count = jobCounts.find((c) => c.status === status)?._count || 0
+                return (
+                  <div key={status} className="flex-1 min-w-[120px]">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className={`w-3 h-3 rounded-full ${statusColors[status]}`} />
+                      <span className="text-xs font-medium text-muted-foreground">
+                        {status.replace("_", " ")}
+                      </span>
+                    </div>
+                    <div className="text-2xl font-bold">{count}</div>
                   </div>
-                </CardContent>
-              </Card>
+                )
+              })}
             </div>
-          </>
-        ) : (
-          <p className="text-gray-500">Failed to load dashboard data.</p>
-        )}
+          </CardContent>
+        </Card>
       </div>
-    </div>
-  );
+    </>
+  )
 }

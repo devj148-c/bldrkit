@@ -1,102 +1,121 @@
-"use client";
+"use client"
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { cn } from "@/lib/utils";
+import Link from "next/link"
+import { usePathname } from "next/navigation"
 import {
   LayoutDashboard,
   Users,
-  Calculator,
-  Globe,
-  Paintbrush,
+  Briefcase,
+  FileText,
+  Receipt,
+  Calendar,
+  UserCog,
+  Settings,
   LogOut,
-  Menu,
-  X,
-} from "lucide-react";
-import { signOut } from "next-auth/react";
-import { useState } from "react";
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react"
+import { cn } from "@/lib/utils"
+import { useState } from "react"
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/leads", label: "Lead CRM", icon: Users },
-  { href: "/quotes", label: "Quote Tool", icon: Calculator },
-  { href: "/website-builder", label: "Website Builder", icon: Globe },
-  { href: "/visualizer", label: "AI Visualizer", icon: Paintbrush },
-];
+  { href: "/customers", label: "Customers", icon: Users },
+  { href: "/jobs", label: "Jobs", icon: Briefcase },
+  { href: "/estimates", label: "Estimates", icon: FileText },
+  { href: "/invoices", label: "Invoices", icon: Receipt },
+  { href: "/schedule", label: "Schedule", icon: Calendar },
+  { href: "/team", label: "Team", icon: UserCog },
+  { href: "/settings", label: "Settings", icon: Settings },
+]
 
-export function Sidebar() {
-  const pathname = usePathname();
-  const [mobileOpen, setMobileOpen] = useState(false);
+interface SidebarProps {
+  orgName?: string
+  userName?: string
+}
+
+export function Sidebar({ orgName, userName }: SidebarProps) {
+  const pathname = usePathname()
+  const [collapsed, setCollapsed] = useState(false)
 
   return (
-    <>
-      {/* Mobile toggle */}
-      <button
-        onClick={() => setMobileOpen(!mobileOpen)}
-        className="fixed top-4 left-4 z-50 lg:hidden rounded-md bg-[#1a1a2e] p-2 text-white"
-      >
-        {mobileOpen ? <X size={20} /> : <Menu size={20} />}
-      </button>
+    <aside
+      className={cn(
+        "flex flex-col h-screen border-r bg-sidebar-background text-sidebar-foreground transition-all duration-200",
+        collapsed ? "w-16" : "w-64"
+      )}
+    >
+      {/* Logo */}
+      <div className="flex items-center h-14 px-4 border-b border-sidebar-border">
+        {!collapsed && (
+          <Link href="/dashboard" className="flex items-center gap-1">
+            <span className="text-xl font-bold text-primary">BLDR</span>
+            <span className="text-xl font-bold">Kit</span>
+          </Link>
+        )}
+        <button
+          onClick={() => setCollapsed(!collapsed)}
+          className={cn(
+            "p-1 rounded-md hover:bg-sidebar-accent transition-colors",
+            collapsed ? "mx-auto" : "ml-auto"
+          )}
+        >
+          {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+        </button>
+      </div>
 
-      {/* Overlay */}
-      {mobileOpen && (
-        <div
-          className="fixed inset-0 z-30 bg-black/50 lg:hidden"
-          onClick={() => setMobileOpen(false)}
-        />
+      {/* Org name */}
+      {!collapsed && orgName && (
+        <div className="px-4 py-3 border-b border-sidebar-border">
+          <p className="text-xs text-muted-foreground">Organization</p>
+          <p className="text-sm font-medium truncate">{orgName}</p>
+        </div>
       )}
 
-      {/* Sidebar */}
-      <aside
-        className={cn(
-          "fixed left-0 top-0 z-40 h-screen w-64 sidebar-gradient text-white transition-transform duration-200 lg:translate-x-0",
-          mobileOpen ? "translate-x-0" : "-translate-x-full"
-        )}
-      >
-        <div className="flex h-full flex-col">
-          {/* Logo */}
-          <div className="flex h-16 items-center gap-2 px-6 border-b border-white/10">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500 font-bold text-white text-sm">
-              R
-            </div>
-            <span className="text-xl font-bold">BLDRKit</span>
-          </div>
-
-          {/* Navigation */}
-          <nav className="flex-1 space-y-1 px-3 py-4">
-            {navItems.map((item) => {
-              const isActive = pathname.startsWith(item.href);
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={() => setMobileOpen(false)}
-                  className={cn(
-                    "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
-                    isActive
-                      ? "bg-emerald-500/20 text-emerald-400"
-                      : "text-gray-300 hover:bg-white/10 hover:text-white"
-                  )}
-                >
-                  <item.icon size={20} />
-                  {item.label}
-                </Link>
-              );
-            })}
-          </nav>
-
-          {/* Sign out */}
-          <div className="border-t border-white/10 p-3">
-            <button
-              onClick={() => signOut({ callbackUrl: "/" })}
-              className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-gray-300 hover:bg-white/10 hover:text-white transition-colors"
+      {/* Navigation */}
+      <nav className="flex-1 py-4 space-y-1 px-2 overflow-y-auto">
+        {navItems.map((item) => {
+          const isActive = pathname.startsWith(item.href)
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={cn(
+                "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
+                isActive
+                  ? "bg-sidebar-primary text-sidebar-primary-foreground"
+                  : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                collapsed && "justify-center px-2"
+              )}
+              title={collapsed ? item.label : undefined}
             >
-              <LogOut size={20} />
-              Sign Out
-            </button>
+              <item.icon className="h-4 w-4 shrink-0" />
+              {!collapsed && <span>{item.label}</span>}
+            </Link>
+          )
+        })}
+      </nav>
+
+      {/* User section */}
+      <div className="border-t border-sidebar-border p-4">
+        <div className={cn("flex items-center gap-3", collapsed && "justify-center")}>
+          <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold shrink-0">
+            {userName?.[0]?.toUpperCase() || "U"}
           </div>
+          {!collapsed && (
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium truncate">{userName || "User"}</p>
+            </div>
+          )}
+          {!collapsed && (
+            <form action="/api/auth/signout" method="POST">
+              <button type="submit" className="p-1 rounded-md hover:bg-sidebar-accent transition-colors" title="Sign out">
+                <LogOut className="h-4 w-4" />
+              </button>
+            </form>
+          )}
         </div>
-      </aside>
-    </>
-  );
+      </div>
+    </aside>
+  )
 }

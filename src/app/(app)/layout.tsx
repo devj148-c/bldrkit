@@ -1,13 +1,20 @@
-import { Sidebar } from "@/components/layout/Sidebar";
-import { Providers } from "../providers";
+import { redirect } from "next/navigation"
+import { getSessionWithOrg } from "@/lib/auth"
+import { AppShell } from "@/components/layout/AppShell"
 
-export default function AppLayout({ children }: { children: React.ReactNode }) {
+export default async function AppLayout({ children }: { children: React.ReactNode }) {
+  const session = await getSessionWithOrg()
+
+  if (!session) {
+    redirect("/login")
+  }
+
   return (
-    <Providers>
-      <div className="flex min-h-screen bg-gray-50">
-        <Sidebar />
-        <main className="flex-1 lg:ml-64">{children}</main>
-      </div>
-    </Providers>
-  );
+    <AppShell
+      orgName={session.orgName}
+      userName={session.user.name || session.user.email}
+    >
+      {children}
+    </AppShell>
+  )
 }

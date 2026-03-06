@@ -1,148 +1,84 @@
-"use client";
+import Link from "next/link"
+import { Button } from "@/components/ui/button"
+import { Check, ArrowRight } from "lucide-react"
 
-import { useState } from "react";
-import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-
-export default function LoginPage() {
-  const router = useRouter();
-  const [isLogin, setIsLogin] = useState(true);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [businessName, setBusinessName] = useState("");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setError("");
-    setLoading(true);
-
-    try {
-      if (!isLogin) {
-        const res = await fetch("/api/auth/register", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, password, businessName }),
-        });
-        const data = await res.json();
-        if (!res.ok) {
-          setError(data.error || "Registration failed");
-          setLoading(false);
-          return;
-        }
-      }
-
-      const result = await signIn("credentials", {
-        email,
-        password,
-        redirect: false,
-      });
-
-      if (result?.error) {
-        setError("Invalid email or password");
-        setLoading(false);
-        return;
-      }
-
-      router.push("/dashboard");
-    } catch {
-      setError("Something went wrong. Please try again.");
-      setLoading(false);
-    }
-  }
-
+export default function LandingPage() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#1a1a2e] px-4">
-      <div className="w-full max-w-md space-y-8">
-        {/* Logo & heading */}
-        <div className="text-center">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-500 text-2xl font-bold text-white">
-            R
-          </div>
-          <h1 className="mt-4 text-3xl font-bold text-white">BLDRKit</h1>
-          <p className="mt-2 text-gray-400">
-            AI-powered platform for roofing professionals
-          </p>
+    <div className="min-h-screen">
+      {/* Nav */}
+      <nav className="flex items-center justify-between px-6 h-16 border-b">
+        <div className="flex items-center gap-1">
+          <span className="text-2xl font-bold text-primary">BLDR</span>
+          <span className="text-2xl font-bold">Kit</span>
         </div>
+        <div className="flex items-center gap-3">
+          <Link href="/login">
+            <Button variant="ghost">Sign In</Button>
+          </Link>
+          <Link href="/register">
+            <Button>Get Started</Button>
+          </Link>
+        </div>
+      </nav>
 
-        <Card className="border-0 shadow-xl">
-          <CardHeader>
-            <CardTitle>{isLogin ? "Welcome back" : "Create your account"}</CardTitle>
-            <CardDescription>
-              {isLogin
-                ? "Sign in to manage your roofing business"
-                : "Get started with BLDRKit today"}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {!isLogin && (
-                <div className="space-y-2">
-                  <Label htmlFor="businessName">Business Name</Label>
-                  <Input
-                    id="businessName"
-                    placeholder="e.g. Summit Roofing Co."
-                    value={businessName}
-                    onChange={(e) => setBusinessName(e.target.value)}
-                  />
-                </div>
-              )}
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="you@company.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
+      {/* Hero */}
+      <section className="max-w-4xl mx-auto text-center py-24 px-6">
+        <h1 className="text-5xl md:text-6xl font-bold tracking-tight mb-6">
+          The platform for{" "}
+          <span className="text-primary">home services</span>{" "}
+          professionals
+        </h1>
+        <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
+          CRM, job management, estimates, invoices, scheduling, and team management —
+          all in one platform built for your trade.
+        </p>
+        <div className="flex justify-center gap-4">
+          <Link href="/register">
+            <Button size="lg" className="text-lg px-8">
+              Start Free <ArrowRight className="ml-2 h-5 w-5" />
+            </Button>
+          </Link>
+        </div>
+      </section>
+
+      {/* Features */}
+      <section className="max-w-5xl mx-auto px-6 py-16">
+        <h2 className="text-3xl font-bold text-center mb-12">Everything you need</h2>
+        <div className="grid md:grid-cols-3 gap-8">
+          {[
+            { title: "Customer CRM", desc: "Track leads, customers, and relationships in one place" },
+            { title: "Job Board", desc: "Kanban-style job management from lead to completion" },
+            { title: "Estimates & Invoices", desc: "Professional estimates and invoices with online payments" },
+            { title: "Scheduling", desc: "Calendar view of all jobs with drag-and-drop scheduling" },
+            { title: "Team Management", desc: "Invite your team, assign roles, manage access by module" },
+            { title: "Multi-Trade", desc: "Enable modules for roofing, HVAC, plumbing, and more" },
+          ].map((feature) => (
+            <div key={feature.title} className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Check className="h-5 w-5 text-primary" />
+                <h3 className="font-semibold">{feature.title}</h3>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  minLength={6}
-                />
-              </div>
-
-              {error && (
-                <p className="text-sm text-red-500">{error}</p>
-              )}
-
-              <Button type="submit" className="w-full bg-emerald-500 hover:bg-emerald-600" disabled={loading}>
-                {loading ? "Please wait..." : isLogin ? "Sign In" : "Create Account"}
-              </Button>
-            </form>
-
-            <div className="mt-4 text-center">
-              <button
-                type="button"
-                onClick={() => { setIsLogin(!isLogin); setError(""); }}
-                className="text-sm text-emerald-600 hover:underline"
-              >
-                {isLogin ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
-              </button>
+              <p className="text-sm text-muted-foreground">{feature.desc}</p>
             </div>
+          ))}
+        </div>
+      </section>
 
-            {isLogin && (
-              <div className="mt-4 rounded-lg bg-gray-50 p-3 text-center text-xs text-gray-500">
-                Demo: demo@roofos.com / demo1234
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+      {/* CTA */}
+      <section className="text-center py-20 px-6 border-t">
+        <h2 className="text-3xl font-bold mb-4">Ready to streamline your business?</h2>
+        <p className="text-muted-foreground mb-8">Join thousands of home services professionals on BLDRKit</p>
+        <Link href="/register">
+          <Button size="lg">Get Started — Free</Button>
+        </Link>
+      </section>
+
+      {/* Footer */}
+      <footer className="border-t py-8 px-6 text-center text-sm text-muted-foreground">
+        <span className="text-primary font-bold">BLDR</span>
+        <span className="font-bold">Kit</span>
+        {" "}&copy; {new Date().getFullYear()}. All rights reserved.
+      </footer>
     </div>
-  );
+  )
 }

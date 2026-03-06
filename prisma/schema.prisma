@@ -1,98 +1,321 @@
 generator client {
-  provider = "prisma-client"
-  output   = "../src/generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
+}
+
+// Organization = a company (roofing company, HVAC shop, etc.)
+model Organization {
+  id            String   @id @default(cuid())
+  name          String
+  slug          String   @unique
+  email         String?
+  phone         String?
+  address       String?
+  city          String?
+  state         String?
+  zip           String?
+  logo          String?
+
+  // Subscription
+  stripeCustomerId     String?   @unique
+  stripeSubscriptionId String?   @unique
+  plan                 Plan      @default(FREE)
+  planStartedAt        DateTime?
+
+  // Modules this org has enabled
+  modules       OrganizationModule[]
+
+  // Relations
+  members       OrganizationMember[]
+  customers     Customer[]
+  jobs          Job[]
+  invoices      Invoice[]
+  estimates     Estimate[]
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+enum Plan {
+  FREE
+  PRO
+  BUSINESS
+  SCALE
+}
+
+model OrganizationModule {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  moduleKey      String
+  enabledAt      DateTime     @default(now())
+  config         Json?
+
+  @@unique([organizationId, moduleKey])
 }
 
 model User {
-  id             String          @id @default(cuid())
-  email          String          @unique
-  password       String
-  businessName   String?
-  phone          String?
-  createdAt      DateTime        @default(now())
-  leads          Lead[]
-  website        Website?
-  quotes         Quote[]
-  visualizations Visualization[]
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  phone         String?
+  image         String?
+  passwordHash  String?
+  emailVerified DateTime?
+
+  memberships   OrganizationMember[]
+  sessions      Session[]
+  accounts      Account[]
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 }
 
-model Lead {
-  id             String   @id @default(cuid())
-  name           String
+model OrganizationMember {
+  id             String       @id @default(cuid())
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  role           MemberRole   @default(MEMBER)
+  moduleRoles    ModuleRole[]
+
+  invitedAt      DateTime     @default(now())
+  acceptedAt     DateTime?
+
+  @@unique([userId, organizationId])
+}
+
+enum MemberRole {
+  ADMIN
+  MODULE_MANAGER
+  MEMBER
+}
+
+model ModuleRole {
+  id                   String             @id @default(cuid())
+  organizationMemberId String
+  member               OrganizationMember @relation(fields: [organizationMemberId], references: [id], onDelete: Cascade)
+  moduleKey            String
+  role                 String
+
+  @@unique([organizationMemberId, moduleKey])
+}
+
+model Customer {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  firstName      String
+  lastName       String
   email          String?
   phone          String?
   address        String?
-  status         String   @default("new")
-  jobType        String?
+  city           String?
+  state          String?
+  zip            String?
+
   source         String?
-  estimatedValue Float?
-  roofArea       Float?
-  materialPref   String?
-  notes          Note[]
-  quote          Quote?
-  userId         String
-  user           User     @relation(fields: [userId], references: [id])
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  notes          String?
+  tags           String[]
+
+  jobs           Job[]
+  estimates      Estimate[]
+  invoices       Invoice[]
+
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
 }
 
-model Note {
+model Job {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  customerId     String
+  customer       Customer     @relation(fields: [customerId], references: [id])
+
+  title          String
+  description    String?
+  moduleKey      String?
+  status         JobStatus    @default(LEAD)
+  priority       Priority     @default(MEDIUM)
+
+  scheduledStart DateTime?
+  scheduledEnd   DateTime?
+  completedAt    DateTime?
+
+  estimatedValue Decimal?     @db.Decimal(10, 2)
+  actualCost     Decimal?     @db.Decimal(10, 2)
+
+  jobAddress     String?
+  jobCity        String?
+  jobState       String?
+  jobZip         String?
+  latitude       Float?
+  longitude      Float?
+
+  assignedTo     String[]
+  estimates      Estimate[]
+  invoices       Invoice[]
+  photos         Photo[]
+  notes          JobNote[]
+
+  moduleData     Json?
+
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+}
+
+enum JobStatus {
+  LEAD
+  QUOTED
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  ON_HOLD
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+model Estimate {
+  id             String         @id @default(cuid())
+  organizationId String
+  organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  customerId     String
+  customer       Customer       @relation(fields: [customerId], references: [id])
+  jobId          String?
+  job            Job?           @relation(fields: [jobId], references: [id])
+
+  estimateNumber String
+  status         EstimateStatus @default(DRAFT)
+
+  lineItems      Json
+  subtotal       Decimal        @db.Decimal(10, 2)
+  tax            Decimal?       @db.Decimal(10, 2)
+  total          Decimal        @db.Decimal(10, 2)
+
+  notes          String?
+  validUntil     DateTime?
+  sentAt         DateTime?
+  acceptedAt     DateTime?
+
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+}
+
+enum EstimateStatus {
+  DRAFT
+  SENT
+  VIEWED
+  ACCEPTED
+  DECLINED
+  EXPIRED
+}
+
+model Invoice {
+  id             String        @id @default(cuid())
+  organizationId String
+  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  customerId     String
+  customer       Customer      @relation(fields: [customerId], references: [id])
+  jobId          String?
+  job            Job?          @relation(fields: [jobId], references: [id])
+
+  invoiceNumber  String
+  status         InvoiceStatus @default(DRAFT)
+
+  lineItems      Json
+  subtotal       Decimal       @db.Decimal(10, 2)
+  tax            Decimal?      @db.Decimal(10, 2)
+  total          Decimal       @db.Decimal(10, 2)
+  amountPaid     Decimal       @default(0) @db.Decimal(10, 2)
+
+  dueDate        DateTime?
+  sentAt         DateTime?
+  paidAt         DateTime?
+
+  stripeInvoiceId  String?
+  stripePaymentUrl String?
+
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+}
+
+enum InvoiceStatus {
+  DRAFT
+  SENT
+  VIEWED
+  PARTIAL
+  PAID
+  OVERDUE
+  VOID
+}
+
+model Photo {
+  id             String   @id @default(cuid())
+  jobId          String
+  job            Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  url            String
+  caption        String?
+  category       String?
+  uploadedBy     String
+
+  createdAt      DateTime @default(now())
+}
+
+model JobNote {
   id        String   @id @default(cuid())
+  jobId     String
+  job       Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  userId    String
   content   String
-  leadId    String
-  lead      Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  type      String   @default("note")
+
   createdAt DateTime @default(now())
 }
 
-model Quote {
+// NextAuth required tables
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
   id           String   @id @default(cuid())
-  address      String
-  roofAreaSqFt Float?
-  materialType String?
-  priceMin     Float?
-  priceMax     Float?
-  leadName     String?
-  leadEmail    String?
-  leadPhone    String?
-  leadId       String?  @unique
-  lead         Lead?    @relation(fields: [leadId], references: [id])
+  sessionToken String   @unique
   userId       String
-  user         User     @relation(fields: [userId], references: [id])
-  createdAt    DateTime @default(now())
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expires      DateTime
 }
 
-model Website {
-  id           String   @id @default(cuid())
-  template     String   @default("modern")
-  businessName String?
-  phone        String?
-  email        String?
-  logo         String?
-  aboutText    String?
-  services     String?
-  serviceAreas String?
-  testimonials String?
-  photos       String?
-  colorScheme  String?
-  published    Boolean  @default(false)
-  userId       String   @unique
-  user         User     @relation(fields: [userId], references: [id])
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-}
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
 
-model Visualization {
-  id             String   @id @default(cuid())
-  originalImage  String
-  generatedImage String?
-  material       String
-  style          String?
-  status         String   @default("pending")
-  userId         String
-  user           User     @relation(fields: [userId], references: [id])
-  createdAt      DateTime @default(now())
+  @@unique([identifier, token])
 }
