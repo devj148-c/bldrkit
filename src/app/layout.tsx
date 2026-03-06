@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "RoofOS — AI-Powered Roofing Platform",
+  title: "BLDRKit — AI-Powered Roofing Platform",
   description:
     "All-in-one SaaS platform for roofing contractors: CRM, quotes, website builder, and AI visualization.",
 };

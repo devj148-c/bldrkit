@@ -59,7 +59,7 @@ export function Sidebar() {
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500 font-bold text-white text-sm">
               R
             </div>
-            <span className="text-xl font-bold">RoofOS</span>
+            <span className="text-xl font-bold">BLDRKit</span>
           </div>
 
           {/* Navigation */}

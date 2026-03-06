@@ -64,7 +64,7 @@ export default function LoginPage() {
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-500 text-2xl font-bold text-white">
             R
           </div>
-          <h1 className="mt-4 text-3xl font-bold text-white">RoofOS</h1>
+          <h1 className="mt-4 text-3xl font-bold text-white">BLDRKit</h1>
           <p className="mt-2 text-gray-400">
             AI-powered platform for roofing professionals
           </p>
@@ -76,7 +76,7 @@ export default function LoginPage() {
             <CardDescription>
               {isLogin
                 ? "Sign in to manage your roofing business"
-                : "Get started with RoofOS today"}
+                : "Get started with BLDRKit today"}
             </CardDescription>
           </CardHeader>
           <CardContent>
