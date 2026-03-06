@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useEffect, useRef, useState, useCallback } from "react"
-import { MapPin } from "lucide-react"
+import { MapPin, Loader2 } from "lucide-react"
 
 interface AddressStepProps {
   address: string
@@ -14,102 +14,104 @@ interface AddressStepProps {
   disabled?: boolean
 }
 
-// Load Maps JS API using the dynamic bootstrap loader (required for Places API New)
-function loadGoogleMaps(apiKey: string): Promise<void> {
+// Simple script loader - no npm package needed
+function loadGoogleMapsScript(apiKey: string): Promise<void> {
   return new Promise((resolve, reject) => {
-    // Already loaded
-    if (window.google?.maps?.places?.PlaceAutocompleteElement) {
+    if (window.google?.maps?.places?.Autocomplete) {
       resolve()
       return
     }
 
-    // Use the Google-recommended inline bootstrap
-    // See: https://developers.google.com/maps/documentation/javascript/load-maps-js-api
-    const existingScript = document.querySelector('script[src*="maps.googleapis.com"]')
-    if (existingScript) {
-      // Wait for existing script
-      const check = setInterval(() => {
-        if (window.google?.maps?.places?.PlaceAutocompleteElement) {
-          clearInterval(check)
-          resolve()
-        }
-      }, 100)
-      setTimeout(() => { clearInterval(check); reject(new Error("Timeout loading Google Maps")) }, 10000)
+    const existing = document.querySelector('script[src*="maps.googleapis.com/maps/api/js"]') as HTMLScriptElement | null
+    if (existing) {
+      if (window.google?.maps?.places?.Autocomplete) {
+        resolve()
+        return
+      }
+      existing.addEventListener("load", () => resolve())
+      existing.addEventListener("error", () => reject(new Error("Google Maps script failed")))
       return
     }
 
-    // Load via importLibrary bootstrap (supports async loading + new APIs)
+    const callbackName = "__initGMaps_" + Date.now()
+    ;(window as any)[callbackName] = () => {
+      delete (window as any)[callbackName]
+      resolve()
+    }
+
     const script = document.createElement("script")
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&v=weekly&callback=__gmapsCallback`
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&callback=${callbackName}`
     script.async = true
     script.defer = true
-
-    // Global callback
-    ;(window as any).__gmapsCallback = () => {
-      delete (window as any).__gmapsCallback
-      resolve()
+    script.onerror = () => {
+      delete (window as any)[callbackName]
+      reject(new Error("Failed to load Google Maps"))
     }
-
-    script.onerror = () => reject(new Error("Failed to load Google Maps script"))
     document.head.appendChild(script)
   })
 }
 
 export function AddressStep({ address, onAddressChange, onSubmit, disabled }: AddressStepProps) {
-  const containerRef = useRef<HTMLDivElement>(null)
-  const [ready, setReady] = useState(false)
+  const inputRef = useRef<HTMLInputElement>(null)
+  const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null)
+  const [loading, setLoading] = useState(true)
   const [fallback, setFallback] = useState(false)
-  const autocompleteRef = useRef<any>(null)
   const stableOnAddressChange = useCallback(onAddressChange, [onAddressChange])
 
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY
 
-  // Load Google Maps + init autocomplete
   useEffect(() => {
     if (!apiKey) {
       setFallback(true)
+      setLoading(false)
       return
     }
 
-    let cancelled = false
+    if (autocompleteRef.current) {
+      setLoading(false)
+      return
+    }
 
-    loadGoogleMaps(apiKey)
+    loadGoogleMapsScript(apiKey)
       .then(() => {
-        if (cancelled || !containerRef.current || autocompleteRef.current) return
+        if (!inputRef.current || autocompleteRef.current) return
 
-        const placeAutocomplete = new google.maps.places.PlaceAutocompleteElement({
+        const autocomplete = new google.maps.places.Autocomplete(inputRef.current, {
+          types: ["address"],
           componentRestrictions: { country: "us" },
+          fields: ["formatted_address", "geometry", "address_components"],
         })
 
-        placeAutocomplete.style.width = "100%"
-        placeAutocomplete.setAttribute("placeholder", "Start typing your address...")
-
-        placeAutocomplete.addEventListener("gmp-select", async (event: any) => {
-          const placePrediction = event.placePrediction
-          if (!placePrediction) return
-
-          const place = placePrediction.toPlace()
-          await place.fetchFields({ fields: ["formattedAddress", "location", "addressComponents"] })
-
-          if (place.formattedAddress) {
-            stableOnAddressChange(place.formattedAddress)
+        autocomplete.addListener("place_changed", () => {
+          const place = autocomplete.getPlace()
+          if (place?.formatted_address) {
+            stableOnAddressChange(place.formatted_address)
           }
         })
 
-        if (containerRef.current) {
-          containerRef.current.innerHTML = ""
-          containerRef.current.appendChild(placeAutocomplete)
-          autocompleteRef.current = placeAutocomplete
-          setReady(true)
-        }
+        autocompleteRef.current = autocomplete
+        setLoading(false)
       })
       .catch((err) => {
         console.error("Google Maps load error:", err)
         setFallback(true)
+        setLoading(false)
       })
-
-    return () => { cancelled = true }
   }, [apiKey, stableOnAddressChange])
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      const pac = document.querySelector(".pac-container")
+      const visible = pac && (pac as HTMLElement).style.display !== "none"
+      if (visible) {
+        e.preventDefault()
+        return
+      }
+      if (address.trim()) {
+        onSubmit()
+      }
+    }
+  }
 
   return (
     <Card className="border-0 shadow-lg">
@@ -125,46 +127,30 @@ export function AddressStep({ address, onAddressChange, onSubmit, disabled }: Ad
       <CardContent className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="address">Property Address</Label>
-
-          {!fallback ? (
-            <>
-              {/* Google Places Autocomplete (New API) renders here */}
-              <div
-                ref={containerRef}
-                className="[&_gmp-place-autocomplete]:w-full [&_input]:h-12 [&_input]:text-base [&_input]:rounded-md [&_input]:border [&_input]:border-input [&_input]:bg-background [&_input]:px-3 [&_input]:py-2 [&_input]:ring-offset-background [&_input]:focus-visible:outline-none [&_input]:focus-visible:ring-2 [&_input]:focus-visible:ring-ring"
-              >
-                {!ready && (
-                  <Input
-                    placeholder="Loading address search..."
-                    disabled
-                    className="h-12 text-base"
-                  />
-                )}
-              </div>
-              {address && (
-                <p className="text-sm text-muted-foreground flex items-center gap-1.5 mt-1">
-                  <MapPin className="h-3.5 w-3.5" />
-                  {address}
-                </p>
-              )}
-            </>
-          ) : (
-            <>
-              {/* Fallback: plain text input */}
-              <Input
-                id="address"
-                value={address}
-                onChange={(event) => onAddressChange(event.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && address.trim()) onSubmit()
-                }}
-                placeholder="123 Main St, Austin, TX 78701"
-                className="h-12 text-base"
-              />
-              <p className="text-xs text-muted-foreground">
-                Enter your full street address including city and state
-              </p>
-            </>
+          <div className="relative">
+            <Input
+              ref={inputRef}
+              id="address"
+              onKeyDown={handleKeyDown}
+              placeholder={loading && !fallback ? "Loading address search..." : "Start typing your address..."}
+              className="h-12 text-base pr-10"
+              autoComplete="off"
+              disabled={loading && !fallback}
+            />
+            {loading && !fallback && (
+              <Loader2 className="absolute right-3 top-3.5 h-5 w-5 animate-spin text-muted-foreground" />
+            )}
+          </div>
+          {address && (
+            <p className="text-sm text-green-500 flex items-center gap-1.5 mt-1">
+              <MapPin className="h-3.5 w-3.5" />
+              {address}
+            </p>
+          )}
+          {fallback && !address && (
+            <p className="text-xs text-muted-foreground">
+              Enter your full street address including city and state
+            </p>
           )}
         </div>
         <div className="flex justify-end">
