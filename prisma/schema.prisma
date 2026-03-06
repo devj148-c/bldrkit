@@ -34,6 +34,8 @@ model Organization {
   jobs          Job[]
   invoices      Invoice[]
   estimates     Estimate[]
+  website       Website?
+  appointments  Appointment[]
 
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
@@ -318,4 +320,147 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
+}
+
+// ─── Website Builder ────────────────────────────────────────────
+
+model Website {
+  id             String       @id @default(cuid())
+  organizationId String       @unique
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  // Template
+  templateId     String
+  colorScheme    Json?
+  fontPairing    Json?
+
+  // Domain
+  subdomain      String?      @unique
+  customDomain   String?      @unique
+
+  // SEO
+  googleAnalyticsId  String?
+  searchConsoleVerif String?
+
+  // Content
+  companyTagline String?
+  companyStory   String?
+
+  // Onboarding data
+  companyPhone   String?
+  companyEmail   String?
+  companyAddress String?
+  companyCity    String?
+  companyState   String?
+  companyZip     String?
+  businessHours  Json?
+  yearsInBusiness Int?
+  licenseNumber  String?
+  insuranceInfo  String?
+  services       String[]
+  primaryCity    String?
+  serviceCities  String[]
+  serviceRadius  Int?
+  logoUrl        String?
+
+  // Status
+  published      Boolean      @default(false)
+  lastPublished  DateTime?
+  lastEdited     DateTime?
+
+  // Relations
+  pages          WebsitePage[]
+
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+}
+
+model WebsitePage {
+  id              String          @id @default(cuid())
+  websiteId       String
+  website         Website         @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+
+  slug            String
+  pageType        WebsitePageType
+  title           String
+  metaTitle       String
+  metaDescription String
+  h1              String
+  content         Json
+  schema          Json?
+  published       Boolean         @default(true)
+  sortOrder       Int             @default(0)
+
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@unique([websiteId, slug])
+}
+
+enum WebsitePageType {
+  HOME
+  SERVICE
+  SUB_SERVICE
+  SERVICE_AREA
+  ABOUT
+  REVIEWS
+  GALLERY
+  BLOG
+  BLOG_POST
+  FAQ
+  FINANCING
+  CONTACT
+  CUSTOM
+}
+
+model Appointment {
+  id             String            @id @default(cuid())
+  organizationId String
+  organization   Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  // Customer info
+  customerName   String
+  customerPhone  String
+  customerEmail  String?
+  customerAddress String?
+
+  // Appointment details
+  serviceRequested String
+  scheduledDate    DateTime
+  scheduledTime    String
+  duration         Int              @default(60)
+  notes            String?
+  photos           String[]
+
+  // Status
+  status           AppointmentStatus @default(PENDING)
+  confirmedAt      DateTime?
+  cancelledAt      DateTime?
+  completedAt      DateTime?
+
+  // Notifications
+  customerConfirmationSent Boolean  @default(false)
+  rooferNotificationSent   Boolean  @default(false)
+  reminderSent             Boolean  @default(false)
+  calendarInviteSent       Boolean  @default(false)
+
+  // Link to CRM
+  jobId            String?
+  customerId       String?
+
+  // Source tracking
+  source           String?
+  pageUrl          String?
+
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+}
+
+enum AppointmentStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  RESCHEDULED
+  COMPLETED
+  NO_SHOW
 }

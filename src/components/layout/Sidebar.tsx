@@ -14,6 +14,8 @@ import {
   LogOut,
   ChevronLeft,
   ChevronRight,
+  Globe,
+  CalendarCheck,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useState } from "react"
@@ -25,6 +27,8 @@ const navItems = [
   { href: "/estimates", label: "Estimates", icon: FileText },
   { href: "/invoices", label: "Invoices", icon: Receipt },
   { href: "/schedule", label: "Schedule", icon: Calendar },
+  { href: "/website-builder", label: "Website Builder", icon: Globe },
+  { href: "/appointments", label: "Appointments", icon: CalendarCheck },
   { href: "/team", label: "Team", icon: UserCog },
   { href: "/settings", label: "Settings", icon: Settings },
 ]
