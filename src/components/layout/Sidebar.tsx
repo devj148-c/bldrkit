@@ -16,6 +16,7 @@ import {
   ChevronRight,
   Globe,
   CalendarCheck,
+  Calculator,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useState } from "react"
@@ -24,6 +25,7 @@ const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/customers", label: "Customers", icon: Users },
   { href: "/jobs", label: "Jobs", icon: Briefcase },
+  { href: "/quick-estimate", label: "Quick Estimate", icon: Calculator },
   { href: "/estimates", label: "Estimates", icon: FileText },
   { href: "/invoices", label: "Invoices", icon: Receipt },
   { href: "/schedule", label: "Schedule", icon: Calendar },
